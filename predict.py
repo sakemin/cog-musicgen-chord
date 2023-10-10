@@ -119,7 +119,7 @@ class Predictor(BasePredictor):
             ge=0,
         ),
         audio_end: int = Input(
-            description="End time of the audio file to use for chord conditioning. If -1 or None, will default to the end of the audio clip.",
+            description="End time of the audio file to use for chord conditioning. If None, will default to the end of the audio clip.",
             default=None,
             ge=0,
         ),
@@ -394,6 +394,8 @@ class Predictor(BasePredictor):
 
         if output_format == "mp3":
             mp3_path = "out.mp3"
+            if Path(mp3_path).exists():
+                os.remove(mp3_path)
             subprocess.call(["ffmpeg", "-i", wav_path, mp3_path])
             os.remove(wav_path)
             path = mp3_path
