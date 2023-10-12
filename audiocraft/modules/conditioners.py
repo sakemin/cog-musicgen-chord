@@ -757,7 +757,8 @@ class ChromaChordConditioner(ChromaStemConditioner):
 
         self.chroma = ChordExtractor(device = device, sample_rate=sample_rate, n_chroma=n_chroma, max_duration = duration, chroma_len = self.chroma_len, winhop = self.winhop).to(device)
         self.chords = chords.Chords()
-
+        
+        self.continuation_count = 0 # for infinite generation with text chroma
         #3 Layered MLP projection override
         '''
         self.output_proj = nn.Sequential(
@@ -871,6 +872,9 @@ class ChromaChordConditioner(ChromaStemConditioner):
         out = F.pad(out[None], (0, 0, 0, target_length - out.shape[0]))[0]
         return out.to(self.device)
 
+    def set_continuation_count(self, sub_duration_ratio, current_iter):
+        self.continuation_count = int(self.chroma_len * sub_duration_ratio * current_iter)
+
     @torch.no_grad()
     def _get_wav_embedding(self, x: tp.Union[WavCondition, WavChordTextCondition]) -> torch.Tensor:
         """Get the wav embedding from the WavCondition.
@@ -920,6 +924,9 @@ class ChromaChordConditioner(ChromaStemConditioner):
                             mhot = self.chords.chord(token)
                             rolled = np.roll(mhot[2], mhot[0])
                             for i in range(count, count + add_step):
+                                if self.continuation_count > 0:
+                                    self.continuation_count -= 1
+                                    continue
                                 if count >= self.chroma_len: 
                                     break
                                 chroma[i] = torch.Tensor(rolled)
