@@ -1,4 +1,4 @@
-# cog-musicgen-chord
+# Cog Implementation with MusicGen-Chord
 [![Replicate](https://replicate.com/sakemin/musicgen-chord/badge)](https://replicate.com/sakemin/musicgen-chord) 
 
 MusicGen Chord is the modified version of Meta's [MusicGen](https://github.com/facebookresearch/audiocraft) Melody model, which can generate music based on audio-based chord conditions or text-based chord conditions.
