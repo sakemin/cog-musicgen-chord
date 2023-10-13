@@ -82,8 +82,8 @@ Push the contents of your current directory to Replicate, using the model name y
 ```
 cog push r8.im/username/modelname
 ```
-
 [Learn more about pushing models to Replicate.](https://replicate.com/docs/guides/push-a-model)
+
 ---
 ## Prediction
 ### Prediction Parameters
