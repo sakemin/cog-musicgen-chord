@@ -85,8 +85,8 @@ cog push r8.im/username/modelname
 [Learn more about pushing models to Replicate.](https://replicate.com/docs/guides/push-a-model)
 
 ---
-## Prediction
-### Prediction Parameters
+# Prediction
+## Prediction Parameters
 - `prompt` (`string`) : A description of the music you want to generate.
 - `text_chords` (`string`) : A text based chord progression condition. Single uppercase alphabet character(eg. `C`) is considered as a major chord. Chord attributes like(`maj`, `min`, `dim`, `aug`, `min6`, `maj6`, `min7`, `minmaj7`, `maj7`, `7`, `dim7`, `hdim7`, `sus2` and `sus4`) can be added to the root alphabet character after `:`.(eg. `A:min7`) Each chord token splitted by `SPACE` is allocated to a single bar. If more than one chord must be allocated to a single bar, cluster the chords adding with `,` without any `SPACE`.(eg. `C,C:7 G, E:min A:min`) You must choose either only one of `audio_chords` below or `text_chords`.
 - `bpm` (`number`) : BPM condition for the generated output. `text_chords` will be processed based on this value. This will be appended at the end of `prompt`.
