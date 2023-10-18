@@ -39,6 +39,10 @@ class ChordExtractor(nn.Module):
 
         self.chords = chords.Chords()
         self.device = device
+
+        self.denoise_window_size = 7
+        self.denoise_threshold = 0.5
+        
         self.model = BTC_model(config=self.config.model).to(device)
         if os.path.isfile(self.model_file):
             checkpoint = torch.load(self.model_file)
