@@ -286,7 +286,7 @@ class Predictor(BasePredictor):
                         wav = self.mbd.tokens_to_wav(tokens)
                     wavs.append(wav.detach().cpu())
                 if int(duration - overlap) % sub_duration != 0:
-                    set_generation_params(overlap + ((duration - overlap) % sub_duration)) ## 여기
+                    set_generation_params(overlap + ((duration - overlap) % sub_duration))
                     wav, tokens = model.generate_continuation_with_audio_tokens_and_audio_chroma(
                         prompt=tokens[...,sub_duration*encodec_rate:],
                         melody_wavs = audio_chords[...,sub_duration*(len(wavs))*sr:],

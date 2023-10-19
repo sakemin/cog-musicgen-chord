@@ -9,6 +9,15 @@ build:
   # a list of ubuntu apt packages to install
   system_packages:
     - ffmpeg
+    - unzip
+    - build-essential
+    - libeigen3-dev
+    - libyaml-dev
+    - libfftw3-dev
+    - libtag1-dev>=1.9
+    - libchromaprint-dev
+    - numactl
+    - sox
     # - "libgl1-mesa-glx"
     # - "libglib2.0-0"
 
@@ -40,9 +49,13 @@ build:
     - "encodec"
     - "protobuf"
     - "tensorboard>=1.15"
+    - "pydub"
+    - "numba"
+    - "essentia-tensorflow"
   
   # commands run after the environment is setup
-  # run:
+  run:
+    - python3 -m pip install -U git+https://github.com/facebookresearch/demucs#egg=demucs
   #   - "apt-get update && apt-get install -y ffmpeg"
   #   - "apt-get install unzip"
   

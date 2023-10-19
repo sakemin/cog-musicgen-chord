@@ -1,0 +1,9 @@
+# @package __global__
+
+datasource:
+  max_sample_rate: 44100
+  max_channels: 2
+  train: src/meta
+  valid: src/meta
+  evaluate: src/meta
+  generate: src/meta
