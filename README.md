@@ -141,6 +141,59 @@ cog push r8.im/username/modelname
 - If the tokens are decoded with MBD, than the output audio quality is better.
 - Using MBD takes more calculation time, since it has its own prediction sequence.
 ---
+# Fine-tuning MusicGen
+
+Assuming you have a local environment configured (i.e. you've completed the steps specified under Run with Cog), you can run training with a command like:
+
+```
+cog train -i dataset_path=@<path-to-your-data> <additional hyperparameters>
+```
+## Dataset
+### Audio
+- Compressed files in formats like .zip, .tar, .gz, and .tgz are compatible for dataset uploads.
+- Single audio files with .mp3, .wav, and .flac formats can also be uploaded.
+- Audio files within the dataset must exceed 30 seconds in duration.
+- **Audio Chunking:** Files surpassing 30 seconds will be divided into multiple 30-second chunks.
+- **Vocal Removal:** If `drop_vocals` is set to `True`, the vocal tracks in the audio files will be isolated and removed (Default: `True`).
+	- For datasets containing audio without vocals, setting `drop_vocals=False` reduces data preprocessing time and maintains audio file quality.	
+### Text Description
+- If each audio file requires a distinct description, create a .txt file with a single-line description corresponding to each .mp3 or .wav file (e.g., `01_A_Man_Without_Love.mp3` and `01_A_Man_Without_Love.txt`).
+- For a uniform description across all audio files, set the `one_same_description` argument to your desired description. In this case, there's no need for individual .txt files.
+- **Auto Labeling:** When `auto_labeling` is set to `True`, labels such as 'genre', 'mood', 'theme', 'instrumentation', 'key', and 'bpm' will be generated and added to each audio file in the dataset (Default: `True`).
+	- [Available Tags for Labeling](https://github.com/sakemin/cog-musicgen-chord/blob/main/metadata.py)
+## Train Parameters
+### Train Inputs
+- `dataset_path`: Path = Input("Path to the dataset directory")
+- `one_same_description`: str = Input(description="A description for all audio data", default=None)
+- `"auto_labeling"`: bool = Input(description="Generate labels (genre, mood, theme, etc.) for each track using `essentia-tensorflow` for music information retrieval", default=True)
+- `"drop_vocals"`: bool = Input(description="Remove vocal tracks from audio files using Demucs source separation", default=True)
+- `lr`: float = Input(description="Learning rate", default=1)
+- `epochs`: int = Input(description="Number of epochs to train for", default=10)
+- `updates_per_epoch`: int = Input(description="Number of iterations for one epoch", default=100) #If None, iterations per epoch will be set according to dataset/batch size. If a value is provided, the number of iterations per epoch will be set as specified.
+- `batch_size`: int = Input(description="Batch size", default=3)
+### Default Parameters
+- Using `epochs=3`, `updates_per_epoch=100`, and `lr=1`, the fine-tuning process takes approximately 15 minutes.
+- For 8 GPU multiprocessing, `batch_size` must be a multiple of 8. Otherwise, `batch_size` will be automatically set to the nearest multiple of 8.
+- For the `chord` model, the maximum `batch_size` is `16` with the specified 8 x Nvidia A40 machine setting.
+
+## Example Code with Replicate API
+```python
+import replicate
+
+training = replicate.trainings.create(
+	version="sakemin/musicgen-chord:8a5f8e1e718eec00db293ebb2eb64ccc077ca59ba5161dfed5b011dadfaf9fd6",
+  input={
+    "dataset_path":"https://your/data/path.zip",
+    "one_same_description":"description for your dataset music",
+    "epochs":3,
+    "updates_per_epoch":100,
+  },
+  destination="my-name/my-model"
+)
+
+print(training)
+```
+---
 ## References
 - Chord recognition from audio file is performed using [BTC](https://github.com/jayg996/BTC-ISMIR19) model, by [Jonggwon Park](https://github.com/jayg996).
 	-  Paper : [A Bi-Directional Transformer for Musical Chord Recognition](https://arxiv.org/abs/1907.02698)
