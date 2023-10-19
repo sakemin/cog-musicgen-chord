@@ -141,6 +141,12 @@ cog push r8.im/username/modelname
 - If the tokens are decoded with MBD, than the output audio quality is better.
 - Using MBD takes more calculation time, since it has its own prediction sequence.
 ---
+## References
+- Chord recognition from audio file is performed using [BTC](https://github.com/jayg996/BTC-ISMIR19) model, by [Jonggwon Park](https://github.com/jayg996).
+	-  Paper : [A Bi-Directional Transformer for Musical Chord Recognition](https://arxiv.org/abs/1907.02698)
+-	The auto-labeling feature utilizes [`effnet-discogs`](https://replicate.com/mtg/effnet-discogs) from [MTG](https://github.com/MTG)'s [`essentia`](https://github.com/MTG/essentia).
+- 'key' and 'bpm' values are obtained using `librosa`.
+- Vocal dropping is implemented using Meta's [`demucs`](https://github.com/facebookresearch/demucs).
 ## Licenses
 - All code in this repository is licensed under the [Apache License 2.0 license](https://github.com/sakemin/cog-musicgen-chord/blob/main/LICENSE).
 - The weights in [this repository](https://github.com/sakemin/cog-musicgen-chord) repository are released under the CC-BY-NC 4.0 license as found in the [LICENSE_weights file](https://github.com/sakemin/cog-musicgen-chord/blob/main/LICENSE_weights).
