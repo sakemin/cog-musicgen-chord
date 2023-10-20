@@ -88,11 +88,11 @@ def prepare_data(
 
     for filename in tqdm(os.listdir(target_path)):
         if filename.endswith(('.mp3', '.wav', '.flac')):
-            if drop_vocals and separator is not None:
-                print('Separating Vocals from ' + filename)
-                origin, separated = separator.separate_audio_file(target_path + '/' + filename)
-                mixed = separated["bass"] + separated["drums"] + separated["other"]
-                torchaudio.save(target_path + '/' + filename, mixed, separator.samplerate)
+            # if drop_vocals and separator is not None:
+            #     print('Separating Vocals from ' + filename)
+            #     origin, separated = separator.separate_audio_file(target_path + '/' + filename)
+            #     mixed = separated["bass"] + separated["drums"] + separated["other"]
+            #     torchaudio.save(target_path + '/' + filename, mixed, separator.samplerate)
 
 
             # Chuking audio files into 30sec chunks
@@ -108,6 +108,11 @@ def prepare_data(
                     chunk = audio[i:i + 30000]
                     if len(chunk) > 5000: # Omitting residuals with <5sec duration
                         chunk.export(f"{target_path + '/' + filename[:-4]}_chunk{i//1000}.wav", format="wav")
+                        if drop_vocals and separator is not None:
+                            print('Separating Vocals from ' + f"{target_path + '/' + filename[:-4]}_chunk{i//1000}.wav")
+                            origin, separated = separator.separate_audio_file(f"{target_path + '/' + filename[:-4]}_chunk{i//1000}.wav")
+                            mixed = separated["bass"] + separated["drums"] + separated["other"]
+                            torchaudio.save(f"{target_path + '/' + filename[:-4]}_chunk{i//1000}.wav", mixed, separator.samplerate)
                 os.remove(target_path + '/' + filename)
 
     max_sample_rate = 0
@@ -292,7 +297,7 @@ def train(
         one_same_description: str = Input(description="A description for all of audio data", default=None),
         epochs: int = Input(description="Number of epochs to train for", default=3),
         updates_per_epoch: int = Input(description="Number of iterations for one epoch", default=100),
-        batch_size: int = Input(description="Batch size. Must be multiple of 8(number of gpus), for 8-gpu training.", default=16),
+        batch_size: int = Input(description="Batch size. Must be multiple of 8(number of gpus), for 8-gpu training.", default=8),
         optimizer: str = Input(description="Type of optimizer.", default='dadam', choices=["dadam", "adamw"]),
         lr: float = Input(description="Learning rate", default=1),
         lr_scheduler: str = Input(description="Type of lr_scheduler", default="cosine", choices=["exponential", "cosine", "polynomial_decay", "inverse_sqrt", "linear_warmup"]),
@@ -319,19 +324,23 @@ def train(
 
     max_sample_rate, len_dataset = prepare_data(dataset_path, target_path, one_same_description, meta_path, auto_labeling, drop_vocals)
 
-    if batch_size % 8 != 0:
-        batch_size = batch_size - (batch_size%8)
-        print(f"Batch size is reset to {batch_size}, the multiple of 8(number of gpus).")
+    # if batch_size % 8 != 0:
+    #     batch_size = batch_size - (batch_size%8)
+    #     print(f"Batch size is reset to {batch_size}, the multiple of 8(number of gpus).")
 
-    if batch_size > 16:
-        batch_size = 16
-        print(f"Batch size is reset to 16, since the maximum batch size for chord model with 8x A40 is 16.")
+    if batch_size != 8:
+        batch_size = 8
+        print(f"Batch size is reset to 8, since the maximum batch size for chord model with 8x A40 is 8.")
 
 
     solver = "musicgen/musicgen_chord_32khz"
     model_scale = "medium"
     conditioner = "chord2music"
     continue_from = "/src/musicgen_chord.th"
+
+    if not os.path.isfile(continue_from):
+        print("Downloading the model weights!")
+        sp.call(["curl", "https://musicgen-chord.s3.ap-southeast-2.amazonaws.com/musicgen_chord_popped.th", "--output", continue_from])
 
     args = ["run", "-d", "--", f"solver={solver}", f"model/lm/model_scale={model_scale}", f"continue_from={continue_from}", f"conditioner={conditioner}"]
     args.append(f"datasource.max_sample_rate={max_sample_rate}")
