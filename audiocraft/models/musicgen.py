@@ -576,27 +576,30 @@ class MusicGen:
                 prompt_length = prompt_tokens.shape[-1]
 
             stride_tokens = int(self.frame_rate * self.extend_stride)
+            step = 0
 
             while current_gen_offset + prompt_length < total_gen_len:
+                self.lm.condition_provider.conditioners['self_wav'].set_continuation_count(self.extend_stride/self.max_duration, step) #For text based chord conditioning
                 time_offset = current_gen_offset / self.frame_rate
                 chunk_duration = min(self.duration - time_offset, self.max_duration)
                 max_gen_len = int(chunk_duration * self.frame_rate)
                 for attr, ref_wav in zip(attributes, ref_wavs):
-                    wav_length = ref_wav.length.item()
-                    if wav_length == 0:
-                        continue
-                    # We will extend the wav periodically if it not long enough.
-                    # we have to do it here rather than in conditioners.py as otherwise
-                    # we wouldn't have the full wav.
-                    initial_position = int(time_offset * self.sample_rate)
-                    wav_target_length = int(self.max_duration * self.sample_rate)
-                    positions = torch.arange(initial_position,
-                                             initial_position + wav_target_length, device=self.device)
-                    attr.wav['self_wav'] = WavCondition(
-                        ref_wav[0][..., positions % wav_length],
-                        torch.full_like(ref_wav[1], wav_target_length),
-                        [self.sample_rate] * ref_wav[0].size(0),
-                        [None], [0.])
+                    if isinstance(ref_wav, WavCondition):
+                        wav_length = ref_wav.length.item()
+                        if wav_length == 0:
+                            continue
+                        # We will extend the wav periodically if it not long enough.
+                        # we have to do it here rather than in conditioners.py as otherwise
+                        # we wouldn't have the full wav.
+                        initial_position = int(time_offset * self.sample_rate)
+                        wav_target_length = int(self.max_duration * self.sample_rate)
+                        positions = torch.arange(initial_position,
+                                                initial_position + wav_target_length, device=self.device)
+                        attr.wav['self_wav'] = WavCondition(
+                            ref_wav[0][..., positions % wav_length],
+                            torch.full_like(ref_wav[1], wav_target_length),
+                            [self.sample_rate] * ref_wav[0].size(0),
+                            [None], [0.])
                 with self.autocast:
                     gen_tokens = self.lm.generate(
                         prompt_tokens, attributes,
@@ -608,6 +611,7 @@ class MusicGen:
                 prompt_tokens = gen_tokens[:, :, stride_tokens:]
                 prompt_length = prompt_tokens.shape[-1]
                 current_gen_offset += stride_tokens
+                step = step + 1
 
             gen_tokens = torch.cat(all_tokens, dim=-1)
         return gen_tokens
