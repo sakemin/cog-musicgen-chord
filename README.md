@@ -35,7 +35,7 @@ git clone https://github.com/sakemin/cog-musicgen-chord
 To run the model, you need a local copy of the model's Docker image. You can satisfy this requirement by specifying the image ID in your call to `predict` like:
 
 ```
-cog predict r8.im/sakemin/musicgen-chord@sha256:f60d0c00ed7bf642f639224123c456635fe203470d6f6e80545aaa405ad1252a -i prompt="k pop, cool synthwave, drum and bass with jersey club beats" -i duration=30 -i text_chords="C G A:min F" -i bpm=140 -i time_sig="4/4"
+cog predict r8.im/sakemin/musicgen-chord@sha256:c940ab4308578237484f90f010b2b3871bf64008e95f26f4d567529ad019a3d6 -i prompt="k pop, cool synthwave, drum and bass with jersey club beats" -i duration=30 -i text_chords="C G A:min F" -i bpm=140 -i time_sig="4/4"
 ```
 
 For more information, see the Cog section [here](https://replicate.com/sakemin/musicgen-chord/api#run)
@@ -181,7 +181,7 @@ cog train -i dataset_path=@<path-to-your-data> <additional hyperparameters>
 import replicate
 
 training = replicate.trainings.create(
-	version="sakemin/musicgen-chord:8a5f8e1e718eec00db293ebb2eb64ccc077ca59ba5161dfed5b011dadfaf9fd6",
+	version="sakemin/musicgen-chord:c940ab4308578237484f90f010b2b3871bf64008e95f26f4d567529ad019a3d6",
   input={
     "dataset_path":"https://your/data/path.zip",
     "one_same_description":"description for your dataset music",
