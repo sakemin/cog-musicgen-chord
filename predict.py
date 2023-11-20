@@ -63,16 +63,13 @@ def load_ckpt(path, device):
     lm.load_state_dict(loaded['model']) 
     lm.eval()
     lm.cfg = cfg
-    compression_model = CompressionSolver.wrapped_model_from_checkpoint(cfg, cfg.compression_model_checkpoint, device=device)
+    compression_model = CompressionSolver.model_from_checkpoint(cfg.compression_model_checkpoint, device=device)
     return MusicGen(f"{os.getenv('COG_USERNAME')}/musicgen-chord", compression_model, lm)
 
 class Predictor(BasePredictor):
     def setup(self, weights: Optional[Path] = None):
         """Load the model into memory to make running multiple predictions efficient"""
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        self.model = load_ckpt('musicgen_chord.th', self.device)
-        self.model.lm.condition_provider.conditioners['self_wav'].match_len_on_eval = True
         
         self.mbd = MultiBandDiffusion.get_mbd_musicgen()
         
@@ -97,6 +94,10 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
+        model_version: str = Input(
+            description="Model type", default="stereo-chord-large",
+            choices=["chord", "chord-large", "stereo-chord", "stereo-chord-large"]
+        ),
         prompt: str = Input(
             description="A description of the music you want to generate.", default=None
         ),
@@ -107,7 +108,7 @@ class Predictor(BasePredictor):
             description="BPM condition for the generated output. `text_chords` will be processed based on this value. This will be appended at the end of `prompt`.", default=None
         ),
         time_sig: str = Input(
-            description="Time signature value for the generate output. `text_chords` will be processed based on this value. This will be appended at the end of `prompt`.", default=None
+            description="Time signature value for the generate output. `text_chords` will be processed based on this value. This will be appended at the end of `prompt`.", default="4/4"
         ),
         audio_chords: Path = Input(
             description="An audio file that will condition the chord progression. You must choose only one among `audio_chords` or `text_chords` above.",
@@ -141,7 +142,7 @@ class Predictor(BasePredictor):
         #     ge=0,
         # ),
         multi_band_diffusion: bool = Input(
-            description="If `True`, the EnCodec tokens will be decoded with MultiBand Diffusion.",
+            description="If `True`, the EnCodec tokens will be decoded with MultiBand Diffusion. Not compatible with stereo models.",
             default=False,
         ),
         normalization_strategy: str = Input(
@@ -191,6 +192,8 @@ class Predictor(BasePredictor):
             raise ValueError("There must be `time_sig` value set when text based chord conditioning.")
         if continuation and not audio_chords:
             raise ValueError("Must provide an audio input file via `audio_chords` if continuation is `True`.")
+        if multi_band_diffusion and int(self.model.lm.cfg.transformer_lm.n_q) == 8:
+            raise ValueError("Multi-band Diffusion only works with non-stereo models.")
         
         if prompt is None:
              prompt = ''
@@ -206,7 +209,9 @@ class Predictor(BasePredictor):
             else:
                 prompt = prompt + f', bpm : {bpm}'
 
-            
+        
+        self.model = load_ckpt(f'musicgen-{model_version}.th', self.device)
+        self.model.lm.condition_provider.conditioners['self_wav'].match_len_on_eval = True
 
         model = self.model
 
