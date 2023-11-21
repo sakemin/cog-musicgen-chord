@@ -210,6 +210,12 @@ class Predictor(BasePredictor):
                 prompt = prompt + f', bpm : {bpm}'
 
         
+        if os.path.isfile(f'musicgen-{model_version}.th'):
+            pass
+        else:
+            url = f"https://weights.replicate.delivery/default/musicgen-chord/musicgen-{model_version}.th"
+            dest = f"musicgen-{model_version}.th"
+            subprocess.check_call(["pget", url, dest], close_fds=False)
         self.model = load_ckpt(f'musicgen-{model_version}.th', self.device)
         self.model.lm.condition_provider.conditioners['self_wav'].match_len_on_eval = True
 

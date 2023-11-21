@@ -56,6 +56,7 @@ build:
   # commands run after the environment is setup
   run:
     - python3 -m pip install -U git+https://github.com/facebookresearch/demucs#egg=demucs
+    - curl -o /usr/local/bin/pget -L "https://github.com/replicate/pget/releases/download/v0.0.6/pget" && chmod +x /usr/local/bin/pget
   #   - "apt-get update && apt-get install -y ffmpeg"
   #   - "apt-get install unzip"
   
