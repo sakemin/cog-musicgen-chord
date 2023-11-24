@@ -51,8 +51,12 @@ logging:
   log_tensorboard: false
 
 schedule:
-  lr_scheduler: cosine
+  lr_scheduler: null
   cosine:
     warmup: 4000
     lr_min_ratio: 0.0
     cycle_length: 1.0
+
+checkpoint:
+  continue_from: null
+  continue_best: False

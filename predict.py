@@ -46,8 +46,11 @@ def _delete_param(cfg, full_name: str):
         del cfg[parts[-1]]
     OmegaConf.set_struct(cfg, True)
 
-def load_ckpt(path, device):
-    loaded = torch.load(str(path))
+def load_ckpt(path, device, url=False):
+    if url:
+        loaded = torch.hub.load_state_dict_from_url(str(path))
+    else:
+        loaded = torch.load(str(path))
     cfg = OmegaConf.create(loaded['xp.cfg'])
     cfg.device = str(device)
     if cfg.device == 'cpu':
@@ -73,6 +76,13 @@ class Predictor(BasePredictor):
         
         self.mbd = MultiBandDiffusion.get_mbd_musicgen()
         
+        if str(weights) == "weights":
+            weights = None
+
+        if weights is not None:
+            print("Fine-tuned model weights loaded!")
+            self.model = load_ckpt(weights, self.device, url=True)
+
     def _load_model(
         self,
         model_path: str,
@@ -95,8 +105,8 @@ class Predictor(BasePredictor):
     def predict(
         self,
         model_version: str = Input(
-            description="Model type", default="stereo-chord-large",
-            choices=["chord", "chord-large", "stereo-chord", "stereo-chord-large"]
+            description="Model type. Select `fine-tuned` if you trained the model into your own repository.", default="stereo-chord-large",
+            choices=["chord", "chord-large", "stereo-chord", "stereo-chord-large", "fine-tuned"]
         ),
         prompt: str = Input(
             description="A description of the music you want to generate.", default=None
@@ -209,14 +219,19 @@ class Predictor(BasePredictor):
             else:
                 prompt = prompt + f', bpm : {bpm}'
 
-        
-        if os.path.isfile(f'musicgen-{model_version}.th'):
-            pass
+        if model_version == "fine-tuned":
+            try:
+                self.model
+            except AttributeError:
+                raise Exception("ERROR: Fine-tuned weights don't exist! Is the model trained from `sakemin/musicgen-chord`? If not, set `model_version` from `chord`, `chord-large`, `stereo-chord` and `stereo-chord-large`.")
         else:
-            url = f"https://weights.replicate.delivery/default/musicgen-chord/musicgen-{model_version}.th"
-            dest = f"musicgen-{model_version}.th"
-            subprocess.check_call(["pget", url, dest], close_fds=False)
-        self.model = load_ckpt(f'musicgen-{model_version}.th', self.device)
+            if os.path.isfile(f'musicgen-{model_version}.th'):
+                pass
+            else:
+                url = f"https://weights.replicate.delivery/default/musicgen-chord/musicgen-{model_version}.th"
+                dest = f"musicgen-{model_version}.th"
+                subprocess.check_call(["pget", url, dest], close_fds=False)
+            self.model = load_ckpt(f'musicgen-{model_version}.th', self.device)
         self.model.lm.condition_provider.conditioners['self_wav'].match_len_on_eval = True
 
         model = self.model

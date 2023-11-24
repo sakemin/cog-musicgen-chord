@@ -88,13 +88,6 @@ def prepare_data(
 
     for filename in tqdm(os.listdir(target_path)):
         if filename.endswith(('.mp3', '.wav', '.flac')):
-            # if drop_vocals and separator is not None:
-            #     print('Separating Vocals from ' + filename)
-            #     origin, separated = separator.separate_audio_file(target_path + '/' + filename)
-            #     mixed = separated["bass"] + separated["drums"] + separated["other"]
-            #     torchaudio.save(target_path + '/' + filename, mixed, separator.samplerate)
-
-
             # Chuking audio files into 30sec chunks
             audio = AudioSegment.from_file(target_path + '/' + filename)
 
@@ -291,7 +284,8 @@ def prepare_data(
     return max_sample_rate, filelen
 
 def train(
-        dataset_path: Path = Input("Path to dataset directory. Input audio files will be chunked into multiple 30 second audio files. Must be one of 'tar', 'tar.gz', 'gz', 'zip' types of compressed file, or a single 'wav', 'mp3', 'flac' file. Audio files must be longer than 5 seconds.",),
+        model_version: str = Input(description="Model version to train.", default="stereo-chord", choices=["stereo-chord", "chord"]),
+        dataset_path: Path = Input(description="Path to dataset directory. Input audio files will be chunked into multiple 30 second audio files. Must be one of 'tar', 'tar.gz', 'gz', 'zip' types of compressed file, or a single 'wav', 'mp3', 'flac' file. Audio files must be longer than 5 seconds.",),
         auto_labeling: bool = Input(description="Creating label data like genre, mood, theme, instrumentation, key, bpm for each track. Using `essentia-tensorflow` for music information retrieval.", default=True),
         drop_vocals: bool = Input(description="Dropping the vocal tracks from the audio files in dataset, by separating sources with Demucs.", default=True),
         one_same_description: str = Input(description="A description for all of audio data", default=None),
@@ -336,13 +330,23 @@ def train(
     solver = "musicgen/musicgen_chord_32khz"
     model_scale = "medium"
     conditioner = "chord2music"
-    continue_from = "/src/musicgen_chord.th"
+    continue_from = f"/src/musicgen-{model_version}.th"
 
-    if not os.path.isfile(continue_from):
+    if os.path.isfile(f'musicgen-{model_version}.th'):
+        pass
+    else:
         print("Downloading the model weights!")
-        sp.call(["curl", "https://musicgen-chord.s3.ap-southeast-2.amazonaws.com/musicgen_chord_popped.th", "--output", continue_from])
+        url = f"https://weights.replicate.delivery/default/musicgen-chord/musicgen-{model_version}.th"
+        dest = f"musicgen-{model_version}.th"
+        subprocess.check_call(["pget", url, dest], close_fds=False)
 
     args = ["run", "-d", "--", f"solver={solver}", f"model/lm/model_scale={model_scale}", f"continue_from={continue_from}", f"conditioner={conditioner}"]
+    if "stereo" in model_version:
+        args.append(f"codebooks_pattern.delay.delays={[0, 0, 1, 1, 2, 2, 3, 3]}")
+        args.append('transformer_lm.n_q=8')
+        args.append('interleave_stereo_codebooks.use=True')
+        args.append('channels=2')
+    args.append(f"datasource.max_sample_rate={max_sample_rate}")
     args.append(f"datasource.max_sample_rate={max_sample_rate}")
     args.append(f"datasource.train={meta_path}")
     args.append(f"dataset.train.num_samples={len_dataset}")
@@ -368,7 +372,6 @@ def train(
         args.append("dataset.train.permutation_on_files=True")
         args.append(f"optim.updates_per_epoch={updates_per_epoch}")
 
-    print(os.getcwd())
     sp.call(["dora"]+args)
 
     for dirpath, dirnames, filenames in os.walk("tmp"):
