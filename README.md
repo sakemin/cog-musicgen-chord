@@ -107,6 +107,17 @@ cog push r8.im/username/modelname
   
 ## Text Based Chord Conditioning
 ### Text Chord Condition Format
+
+```
+<progression> ::= <bar> " " <bar>
+<bar> ::= <chord> "," <chord>
+<chord> ::= <note> ":" <shorthand>
+<note> ::= <natural> | <note> <modifier>
+<natural> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G"
+<modifier> ::= "b" | "#"
+<shorthand> ::= "maj" | "min" | "dim" | "aug" | "maj7" | "min7" | "7" | "dim7" | "hdim7" | "minmaj7" | "maj6" | "min6" | "9" | "maj9" | "min9" | "sus4"
+```
+
 - `SPACE` is used as split token. Each splitted chunk is assigned to a single bar.
 	-	`C G E:min A:min`
 - When multiple chords must be assigned in a single bar, then append more chords with `,`.
