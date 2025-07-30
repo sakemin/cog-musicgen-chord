@@ -5,6 +5,11 @@ MusicGen Chord is the modified version of Meta's [MusicGen](https://github.com/f
 
 You can demo this model or learn how to use it with Replicate's API [here](https://replicate.com/sakemin/musicgen-chord). 
 
+### Windows + Gradio UI Implementation
+[pbz134](https://github.com/pbz134) has implemented Gradio UI for Windows. Check the repository below.
+
+https://github.com/pbz134/cog-musicgen-chord-windows
+
 # Run with Cog
 
 [Cog](https://github.com/replicate/cog) is an open-source tool that packages machine learning models in a standard, production-ready container. 
